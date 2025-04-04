@@ -90,8 +90,11 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+-- Set python venv
+vim.g.python3_host_prog = '/Users/marko/.pyenv/versions/py3nvim/bin/python'
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -171,6 +174,11 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
+-- Fold lines
+vim.o.foldmethod = 'expr'
+vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
+vim.o.foldenable = false
+
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
 -- is not what someone will guess without a bit more experience.
@@ -244,31 +252,78 @@ require('lazy').setup({
 
   -- Alternatively, use `config = function() ... end` for full control over the configuration.
   -- If you prefer to call `setup` explicitly, use:
-  --    {
-  --        'lewis6991/gitsigns.nvim',
-  --        config = function()
-  --            require('gitsigns').setup({
-  --                -- Your gitsigns configuration here
-  --            })
-  --        end,
-  --    }
+  {
+    'lewis6991/gitsigns.nvim',
+    config = function()
+      require('gitsigns').setup {
+        signs = {
+          add = { text = '┃' },
+          change = { text = '┃' },
+          delete = { text = '_' },
+          topdelete = { text = '‾' },
+          changedelete = { text = '~' },
+          untracked = { text = '┆' },
+        },
+        signs_staged = {
+          add = { text = '┃' },
+          change = { text = '┃' },
+          delete = { text = '_' },
+          topdelete = { text = '‾' },
+          changedelete = { text = '~' },
+          untracked = { text = '┆' },
+        },
+        signs_staged_enable = true,
+        signcolumn = true, -- Toggle with `:Gitsigns toggle_signs`
+        numhl = false, -- Toggle with `:Gitsigns toggle_numhl`
+        linehl = false, -- Toggle with `:Gitsigns toggle_linehl`
+        word_diff = false, -- Toggle with `:Gitsigns toggle_word_diff`
+        watch_gitdir = {
+          follow_files = true,
+        },
+        auto_attach = true,
+        attach_to_untracked = false,
+        current_line_blame = true, -- Toggle with `:Gitsigns toggle_current_line_blame`
+        current_line_blame_opts = {
+          virt_text = true,
+          virt_text_pos = 'eol', -- 'eol' | 'overlay' | 'right_align'
+          delay = 1000,
+          ignore_whitespace = false,
+          virt_text_priority = 100,
+          use_focus = true,
+        },
+        current_line_blame_formatter = '<author>, <author_time:%R> - <summary>',
+        sign_priority = 6,
+        update_debounce = 100,
+        status_formatter = nil, -- Use default
+        max_file_length = 40000, -- Disable if file is longer than this (in lines)
+        preview_config = {
+          -- Options passed to nvim_open_win
+          border = 'single',
+          style = 'minimal',
+          relative = 'cursor',
+          row = 0,
+          col = 1,
+        },
+      }
+    end,
+  },
   --
   -- Here is a more advanced example where we pass configuration
   -- options to `gitsigns.nvim`.
   --
   -- See `:help gitsigns` to understand what the configuration keys do
-  { -- Adds git related signs to the gutter, as well as utilities for managing changes
-    'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
-      },
-    },
-  },
+  -- { -- Adds git related signs to the gutter, as well as utilities for managing changes
+  --   'lewis6991/gitsigns.nvim',
+  --   opts = {
+  --     signs = {
+  --       add = { text = '+' },
+  --       change = { text = '~' },
+  --       delete = { text = '_' },
+  --       topdelete = { text = '‾' },
+  --       changedelete = { text = '~' },
+  --     },
+  --   },
+  -- },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
@@ -403,7 +458,18 @@ require('lazy').setup({
         --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
         --   },
         -- },
-        -- pickers = {}
+        -- pickers = {
+        --   live_grep = {
+        --     file_ignore_patterns = { 'node_modules', '.git', '.venv' },
+        --     additional_args = function(_)
+        --       return { '--hidden' }
+        --     end,
+        --   },
+        --   find_files = {
+        --     file_ignore_patterns = { 'node_modules', '.git', '.venv' },
+        --     hidden = true,
+        --   },
+        -- },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -419,7 +485,12 @@ require('lazy').setup({
       local builtin = require 'telescope.builtin'
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+      vim.keymap.set('n', '<leader>sf', function()
+        builtin.find_files {
+          hidden = true,
+          find_command = { 'rg', '--files', '--hidden', '-g', '!.git' },
+        }
+      end, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
@@ -529,7 +600,15 @@ require('lazy').setup({
           -- Jump to the definition of the word under your cursor.
           --  This is where a variable was first declared, or where a function is defined, etc.
           --  To jump back, press <C-t>.
-          map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+          map('gdv', function()
+            require('telescope.builtin').lsp_definitions { jump_type = 'vsplit', reuse_win = true }
+          end, '[G]oto [D]efinition Vsplit')
+          map('gdt', function()
+            require('telescope.builtin').lsp_definitions { jump_type = 'tab' }
+          end, '[G]oto [D]efinition Tab')
+          map('gdd', function()
+            require('telescope.builtin').lsp_definitions { jump_type = 'never' }
+          end, '[G]oto [D]efinition Popup')
 
           -- Find references for the word under your cursor.
           map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
@@ -563,6 +642,10 @@ require('lazy').setup({
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
+          -- Show diagnostics in float window
+          map('<leader>e', function()
+            vim.diagnostic.open_float { scope = 'line' }
+          end, 'Open diagnostics in float window')
           -- This function resolves a difference between neovim nightly (version 0.11) and stable (version 0.10)
           ---@param client vim.lsp.Client
           ---@param method vim.lsp.protocol.Method
@@ -690,6 +773,17 @@ require('lazy').setup({
             },
           },
         },
+        -- ruff = { enabled = true },
+        ts_ls = {
+          filetypes = {
+            'javascript',
+            'javascriptreact',
+            'javascript.jsx',
+            'typescript',
+            'typescriptreact',
+            'typescript.tsx',
+          },
+        },
       }
 
       -- Ensure the servers and tools above are installed
@@ -766,7 +860,10 @@ require('lazy').setup({
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -807,6 +904,7 @@ require('lazy').setup({
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
       'hrsh7th/cmp-nvim-lsp-signature-help',
+      { 'roobert/tailwindcss-colorizer-cmp.nvim', opts = {} },
     },
     config = function()
       -- See `:help cmp`
@@ -815,6 +913,11 @@ require('lazy').setup({
       luasnip.config.setup {}
 
       cmp.setup {
+        formtting = {
+          format = function(entry, item)
+            return require('tailwindcss-colorizer-cmp').formatter(entry, item)
+          end,
+        },
         snippet = {
           expand = function(args)
             luasnip.lsp_expand(args.body)
@@ -839,7 +942,8 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          -- ['<C-y>'] = cmp.mapping.confirm { select = true },
+          ['<Tab>'] = cmp.mapping.confirm { select = true },
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
@@ -884,6 +988,7 @@ require('lazy').setup({
           { name = 'luasnip' },
           { name = 'path' },
           { name = 'nvim_lsp_signature_help' },
+          { name = 'parrot_completion' },
         },
       }
     end,
@@ -976,7 +1081,145 @@ require('lazy').setup({
     --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
+  { -- File system browser
+    'nvim-neo-tree/neo-tree.nvim',
+    branch = 'v3.x',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-tree/nvim-web-devicons', -- not strictly required, but recommended
+      'MunifTanjim/nui.nvim',
+      { '3rd/image.nvim', opts = {} }, -- Optional image support in preview window: See `# Preview Mode` for more information
+    },
+  },
+  {
+    'nvim-neorg/neorg',
+    lazy = false, -- Disable lazy loading as some `lazy.nvim` distributions set `lazy = true` by default
+    version = '*', -- Pin Neorg to the latest stable release
+    config = function()
+      require('neorg').setup {
+        load = {
+          ['core.defaults'] = {},
+          ['core.concealer'] = {
+            config = {
+              folds = true,
+            },
+          },
+          ['core.dirman'] = {
+            config = {
+              workspaces = {
+                notes = '~/Documents/neorg',
+              },
+            },
+          },
+        },
+      }
+    end,
+  },
+  {
+    'rmagatti/auto-session',
+    lazy = false,
 
+    ---enables autocomplete for opts
+    ---@module "auto-session"
+    ---@type AutoSession.Config
+    opts = {
+      suppressed_dirs = { '~/', '~/Projects', '~/Downloads', '/' },
+      -- log_level = 'debug',
+      session_lens = {
+        mappings = {
+          delete_session = { 'n', '<leader>Sd' },
+          alternate_session = { 'n', '<leader>Sa' },
+          copy_session = { 'n', '<leader>Sc' },
+        },
+      },
+    },
+  },
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    config = true,
+    -- use opts = {} for passing setup options
+    -- this is equivalent to setup({}) function
+  },
+  {
+    'frankroeder/parrot.nvim',
+    dependencies = { 'ibhagwan/fzf-lua', 'nvim-lua/plenary.nvim' },
+    opts = {
+      providers = {
+        anthropic = {
+          api_key = os.getenv 'ANTHROPIC_API_KEY',
+          topic = {
+            model = 'claude-3-5-haiku-20241022',
+          },
+        },
+      },
+      toggle_target = 'popup',
+      fzf_lua_opts = {
+        ['--ansi'] = true,
+        ['--sort'] = '',
+        ['--info'] = 'inline',
+        ['--layout'] = 'reverse',
+        ['--preview-window'] = 'nohidden:right:75%',
+      },
+      chat_shortcut_respond = { modes = { 'n', 'i', 'v', 'x' }, shortcut = '<C-a><C-a>' },
+      chat_shortcut_delete = { modes = { 'n', 'i', 'v', 'x' }, shortcut = '<C-a>d' },
+      chat_shortcut_stop = { modes = { 'n', 'i', 'v', 'x' }, shortcut = '<C-a>s' },
+      chat_shortcut_new = { modes = { 'n', 'i', 'v', 'x' }, shortcut = '<C-a>c' },
+      vim.keymap.set('n', '<leader>p', ':PrtChatNew<CR>', { noremap = true, silent = true, desc = 'Open new Parrot chat' }),
+      system_prompt = {
+        chat = [[
+You are an advanced AI coding assistant designed to help users with programming tasks, code explanations, debugging, and general software development inquiries. Your primary goal is to provide accurate, helpful, and clear responses to coding-related questions and tasks.
+
+Here are some important guidelines for your interactions:
+
+1. Always prioritize writing clean, efficient, and well-documented code.
+2. Explain your thought process and reasoning behind your solutions.
+3. If a user's request is unclear, ask for clarification before proceeding.
+4. Provide examples and analogies when explaining complex concepts.
+5. Offer alternative solutions when appropriate, explaining the pros and cons of each approach.
+6. If you're unsure about something, admit it and suggest resources for further information.
+7. Tailor your language and explanations to the user's apparent skill level.
+8. When debugging, guide the user through the process rather than simply providing a solution.
+9. Encourage best practices and modern coding standards.
+10. Be patient and supportive, especially with beginners.
+
+When responding to a user query, follow these steps:
+1. Analyze the query to understand the user's intent and requirements.
+2. If necessary, break down the problem into smaller, manageable parts.
+3. Provide a clear and concise explanation of your approach.
+4. Present your solution, whether it's code, pseudocode, or a verbal explanation.
+5. If applicable, suggest ways to optimize or extend the solution.
+
+Format your response as follows:
+1. Begin with a brief summary of your understanding of the user's query.
+2. Present your main response, including code snippets when appropriate.
+3. Offer additional explanations or alternatives if relevant.
+4. Conclude with a question or suggestion for next steps, if applicable.
+]],
+      },
+    },
+  },
+  {
+    'folke/zen-mode.nvim',
+    opts = {
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
+    },
+  },
+  {
+    'NeogitOrg/neogit',
+    dependencies = {
+      'nvim-lua/plenary.nvim', -- required
+      'sindrets/diffview.nvim', -- optional - Diff integration
+
+      -- Only one of these is needed.
+      'nvim-telescope/telescope.nvim', -- optional
+      -- "ibhagwan/fzf-lua",              -- optional
+      -- "echasnovski/mini.pick",         -- optional
+    },
+    config = true,
+  },
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
